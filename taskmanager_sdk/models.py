@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 
 @dataclass
@@ -17,8 +17,6 @@ class User:
     id: int
     username: str
     email: str
-    created_at: str
-    updated_at: str
 
 
 @dataclass
@@ -44,11 +42,10 @@ class Todo:
     actual_hours: Optional[float]
     status: str
     due_date: Optional[str]
-    tags: Optional[list[str]]
-    context: str
-    time_horizon: Optional[str]
+    tags: Optional[List[str]]
     created_at: str
     updated_at: str
+    completed_at: Optional[str]
     user_id: int
     project_id: Optional[int]
 
@@ -59,8 +56,25 @@ class OAuthClient:
     id: int
     name: str
     client_id: str
-    redirect_uris: list[str]
-    grant_types: list[str]
-    scopes: list[str]
+    redirect_uris: List[str]
+    grant_types: List[str]
+    scopes: List[str]
+    is_active: bool
     created_at: str
-    user_id: int
+
+
+@dataclass
+class OAuthToken:
+    """OAuth token response model."""
+    access_token: str
+    token_type: str
+    expires_in: int
+    refresh_token: Optional[str] = None
+    scope: Optional[str] = None
+
+
+@dataclass
+class OAuthError:
+    """OAuth error response model."""
+    error: str
+    error_description: Optional[str] = None

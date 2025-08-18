@@ -23,7 +23,7 @@ __version__ = "0.1.0"
 __author__ = "TaskManager SDK"
 
 from .client import TaskManagerClient, create_authenticated_client
-from .models import ApiResponse, User, Project, Todo, OAuthClient
+from .models import ApiResponse, User, Project, Todo, OAuthClient, OAuthToken, OAuthError
 from .exceptions import (
     TaskManagerError,
     AuthenticationError,
@@ -45,6 +45,8 @@ __all__ = [
     "Project",
     "Todo",
     "OAuthClient",
+    "OAuthToken",
+    "OAuthError",
     # Exceptions
     "TaskManagerError",
     "AuthenticationError", 
