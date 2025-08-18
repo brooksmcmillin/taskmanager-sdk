@@ -28,7 +28,7 @@ jobs:
 
     - name: Run mypy type checking
       run: |
-        mypy --config-file mypy.ini *.py
+        mypy *.py
 
     - name: Run tests with pytest
       run: |
