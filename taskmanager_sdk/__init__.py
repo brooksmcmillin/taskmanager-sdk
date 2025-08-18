@@ -19,20 +19,28 @@ Basic usage:
     >>> todos = client.get_todos()
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "TaskManager SDK"
 
 from .client import TaskManagerClient, create_authenticated_client
-from .models import ApiResponse, User, Project, Todo, OAuthClient, OAuthToken, OAuthError
 from .exceptions import (
-    TaskManagerError,
     AuthenticationError,
     AuthorizationError,
+    NetworkError,
     NotFoundError,
-    ValidationError,
     RateLimitError,
     ServerError,
-    NetworkError,
+    TaskManagerError,
+    ValidationError,
+)
+from .models import (
+    ApiResponse,
+    OAuthClient,
+    OAuthError,
+    OAuthToken,
+    Project,
+    Todo,
+    User,
 )
 
 __all__ = [
