@@ -48,6 +48,9 @@ Issues = "https://github.com/brooksmcmillin/taskmanager-sdk/issues"
 where = ["."]
 include = ["taskmanager_sdk*"]
 
+[tool.setuptools.package-data]
+taskmanager_sdk = ["py.typed"]
+
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
