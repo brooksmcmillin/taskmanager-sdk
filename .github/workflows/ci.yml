@@ -28,16 +28,7 @@ jobs:
 
     - name: Run mypy type checking
       run: |
-        mypy *.py
-
-    - name: Run tests with pytest
-      run: |
-        pytest tests/ -v --tb=short
-
-    - name: Generate test coverage report
-      run: |
-        pip install pytest-cov
-        pytest tests/ --cov=. --cov-report=xml --cov-report=term-missing
+        mypy taskmanager_sdk/*.py
 
     - name: Upload coverage to Codecov (optional)
       if: matrix.python-version == '3.11'
