@@ -19,7 +19,7 @@ Basic usage:
     >>> todos = client.get_todos()
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __author__ = "TaskManager SDK"
 
 from .client import TaskManagerClient, create_authenticated_client

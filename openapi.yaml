@@ -1,0 +1,992 @@
+openapi: 3.0.3
+info:
+  title: TaskManager API
+  description: RESTful API for managing tasks, projects, and user authentication with OAuth 2.0 support
+  version: 1.0.0
+  contact:
+    name: TaskManager Support
+    email: support@taskmanager.com
+
+servers:
+  - url: http://localhost:4321/api
+    description: Development server
+  - url: https://api.taskmanager.com
+    description: Production server
+
+security:
+  - cookieAuth: []
+  - bearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 6
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  userId:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: Session cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      operationId: logoutUser
+      responses:
+        '200':
+          description: Logout successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: Cleared session cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /oauth/authorize:
+    get:
+      tags:
+        - OAuth
+      summary: OAuth authorization endpoint
+      operationId: authorizeOAuth
+      parameters:
+        - in: query
+          name: client_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: redirect_uri
+          required: true
+          schema:
+            type: string
+            format: uri
+        - in: query
+          name: response_type
+          required: true
+          schema:
+            type: string
+            enum: [code]
+        - in: query
+          name: scope
+          schema:
+            type: string
+            default: read
+        - in: query
+          name: state
+          schema:
+            type: string
+        - in: query
+          name: code_challenge
+          schema:
+            type: string
+        - in: query
+          name: code_challenge_method
+          schema:
+            type: string
+            enum: [plain, S256]
+      responses:
+        '302':
+          description: Redirect to consent page or login
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - OAuth
+      summary: Handle OAuth authorization consent
+      operationId: consentOAuth
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - client_id
+                - redirect_uri
+                - action
+              properties:
+                client_id:
+                  type: string
+                redirect_uri:
+                  type: string
+                scope:
+                  type: string
+                state:
+                  type: string
+                code_challenge:
+                  type: string
+                code_challenge_method:
+                  type: string
+                action:
+                  type: string
+                  enum: [allow, deny]
+      responses:
+        '302':
+          description: Redirect to callback with authorization code or error
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /oauth/token:
+    options:
+      tags:
+        - OAuth
+      summary: CORS preflight for token endpoint
+      operationId: tokenOptions
+      security: []
+      responses:
+        '200':
+          description: CORS headers returned
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+
+    post:
+      tags:
+        - OAuth
+      summary: OAuth token endpoint
+      operationId: getOAuthToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - grant_type
+                - client_id
+                - client_secret
+              properties:
+                grant_type:
+                  type: string
+                  enum: [authorization_code, refresh_token]
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+                code:
+                  type: string
+                  description: Required for authorization_code grant
+                redirect_uri:
+                  type: string
+                  description: Required for authorization_code grant
+                code_verifier:
+                  type: string
+                  description: Required for PKCE
+                refresh_token:
+                  type: string
+                  description: Required for refresh_token grant
+      responses:
+        '200':
+          description: Token response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    enum: [Bearer]
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  scope:
+                    type: string
+        '400':
+          description: OAuth error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+        '401':
+          description: Invalid client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthError'
+
+  /oauth/clients:
+    get:
+      tags:
+        - OAuth
+      summary: List OAuth clients
+      operationId: listOAuthClients
+      responses:
+        '200':
+          description: List of OAuth clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OAuthClient'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - OAuth
+      summary: Create OAuth client
+      operationId: createOAuthClient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - redirectUris
+              properties:
+                name:
+                  type: string
+                redirectUris:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                grantTypes:
+                  type: array
+                  items:
+                    type: string
+                  default: [authorization_code]
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                  default: [read]
+      responses:
+        '201':
+          description: OAuth client created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/OAuthClient'
+                  - type: object
+                    properties:
+                      client_secret:
+                        type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /oauth/jwks:
+    get:
+      tags:
+        - OAuth
+      summary: Get JSON Web Key Set
+      operationId: getJWKS
+      security: []
+      responses:
+        '200':
+          description: JWKS response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        kty:
+                          type: string
+                        use:
+                          type: string
+                        kid:
+                          type: string
+                        alg:
+                          type: string
+                        n:
+                          type: string
+                        e:
+                          type: string
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /projects:
+    get:
+      tags:
+        - Projects
+      summary: List user projects
+      operationId: listProjects
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Projects
+      summary: Create project
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                color:
+                  type: string
+                  pattern: '^#[0-9A-Fa-f]{6}$'
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects/{id}:
+    get:
+      tags:
+        - Projects
+      summary: Get project by ID
+      operationId: getProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Projects
+      summary: Update project
+      operationId: updateProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                color:
+                  type: string
+                  pattern: '^#[0-9A-Fa-f]{6}$'
+      responses:
+        '200':
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Projects
+      summary: Delete project
+      operationId: deleteProject
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /todos:
+    get:
+      tags:
+        - Todos
+      summary: List todos
+      operationId: listTodos
+      parameters:
+        - in: query
+          name: project_id
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, in_progress, completed, cancelled]
+        - in: query
+          name: due_date
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of todos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Todo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Todos
+      summary: Create todo
+      operationId: createTodo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                project_id:
+                  type: integer
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                due_date:
+                  type: string
+                  format: date-time
+                estimated_hours:
+                  type: number
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Todo created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Todos
+      summary: Update todo (deprecated - use /todos/{id} instead)
+      operationId: updateTodoDeprecated
+      deprecated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: integer
+                title:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [pending, in_progress, completed, cancelled]
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                due_date:
+                  type: string
+                  format: date-time
+                estimated_hours:
+                  type: number
+                actual_hours:
+                  type: number
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Todo updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /todos/{id}:
+    get:
+      tags:
+        - Todos
+      summary: Get todo by ID
+      operationId: getTodo
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      responses:
+        '200':
+          description: Todo details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Todos
+      summary: Update todo
+      operationId: updateTodo
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [pending, in_progress, completed, cancelled]
+                priority:
+                  type: string
+                  enum: [low, medium, high, urgent]
+                due_date:
+                  type: string
+                  format: date-time
+                estimated_hours:
+                  type: number
+                actual_hours:
+                  type: number
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Todo updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Todos
+      summary: Delete todo
+      operationId: deleteTodo
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      responses:
+        '200':
+          description: Todo deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /todos/{id}/complete:
+    post:
+      tags:
+        - Todos
+      summary: Mark todo as complete
+      operationId: completeTodo
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - actual_hours
+              properties:
+                actual_hours:
+                  type: number
+                  minimum: 0
+      responses:
+        '200':
+          description: Todo completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  parameters:
+    ProjectId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+      description: Project ID
+
+    TodoId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+      description: Todo ID
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Todo:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        project_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, completed, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        due_date:
+          type: string
+          format: date-time
+        estimated_hours:
+          type: number
+        actual_hours:
+          type: number
+        tags:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    OAuthClient:
+      type: object
+      properties:
+        id:
+          type: integer
+        client_id:
+          type: string
+        name:
+          type: string
+        redirect_uris:
+          type: string
+          description: JSON array of redirect URIs
+        grant_types:
+          type: string
+          description: JSON array of grant types
+        scopes:
+          type: string
+          description: JSON array of scopes
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    OAuthError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum:
+            - invalid_request
+            - invalid_client
+            - invalid_grant
+            - unauthorized_client
+            - unsupported_grant_type
+            - invalid_scope
+            - server_error
+            - access_denied
+        error_description:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints
+  - name: OAuth
+    description: OAuth 2.0 authorization endpoints
+  - name: Projects
+    description: Project management endpoints
+  - name: Todos
+    description: Todo task management endpoints
