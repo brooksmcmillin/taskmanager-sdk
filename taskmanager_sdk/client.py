@@ -102,7 +102,7 @@ class TaskManagerClient:
                     error_message = error_data.get(
                         "error", f"HTTP {response.status_code}"
                     )
-                except:
+                except (ValueError, requests.exceptions.JSONDecodeError):
                     error_message = f"HTTP {response.status_code}: {response.text}"
 
                 api_response = ApiResponse(
@@ -128,7 +128,7 @@ class TaskManagerClient:
             # Parse JSON response
             try:
                 json_data = response.json()
-            except:
+            except (ValueError, requests.exceptions.JSONDecodeError):
                 json_data = None
 
             return ApiResponse(
@@ -192,22 +192,24 @@ class TaskManagerClient:
         return self._make_request("GET", "/projects")
 
     def create_project(
-        self, name: str, color: str, description: str | None = None
+        self, name: str, description: str | None = None, color: str | None = None
     ) -> ApiResponse:
         """
         Create a new project.
 
         Args:
             name: Project name
-            color: Project color
             description: Optional project description
+            color: Optional project color (hex format: #RRGGBB)
 
         Returns:
             ApiResponse with created project data
         """
-        data = {"name": name, "color": color}
+        data: dict[str, str] = {"name": name}
         if description is not None:
             data["description"] = description
+        if color is not None:
+            data["color"] = color
         return self._make_request("POST", "/projects", data)
 
     def get_project(self, project_id: int) -> ApiResponse:
@@ -554,7 +556,7 @@ class TaskManagerClient:
                     error_message = error_data.get(
                         "error", f"HTTP {response.status_code}"
                     )
-                except:
+                except (ValueError, requests.exceptions.JSONDecodeError):
                     error_message = f"HTTP {response.status_code}: {response.text}"
 
                 return ApiResponse(
@@ -623,7 +625,7 @@ class TaskManagerClient:
                         "error_description",
                         error_data.get("error", f"HTTP {response.status_code}"),
                     )
-                except:
+                except (ValueError, requests.exceptions.JSONDecodeError):
                     error_message = f"HTTP {response.status_code}: {response.text}"
 
                 if response.status_code == 401:
@@ -637,7 +639,7 @@ class TaskManagerClient:
 
             try:
                 json_data = response.json()
-            except:
+            except (ValueError, requests.exceptions.JSONDecodeError):
                 json_data = None
 
             return ApiResponse(
