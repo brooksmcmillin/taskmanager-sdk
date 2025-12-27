@@ -78,3 +78,62 @@ class OAuthError:
     """OAuth error response model."""
     error: str
     error_description: str | None = None
+
+
+@dataclass
+class Task:
+    """Task object returned by API endpoints."""
+    id: int
+    title: str
+    status: str
+    priority: str
+    description: str | None = None
+    due_date: str | None = None
+    category: str | None = None
+    project_name: str | None = None
+    project_color: str | None = None
+    tags: list[str] | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
+@dataclass
+class TaskListResponse:
+    """Response containing a list of tasks."""
+    tasks: list[Task]
+
+
+@dataclass
+class TaskCreateResponse:
+    """Response from creating a task."""
+    id: int
+    title: str
+    status: str
+
+
+@dataclass
+class TaskUpdateResponse:
+    """Response from updating a task."""
+    id: int
+    updated_fields: list[str]
+    status: str
+
+
+@dataclass
+class TaskSearchResponse:
+    """Response from searching tasks."""
+    tasks: list[Task]
+    count: int
+
+
+@dataclass
+class Category:
+    """Category with task count."""
+    name: str
+    task_count: int
+
+
+@dataclass
+class CategoryListResponse:
+    """Response containing a list of categories."""
+    categories: list[Category]

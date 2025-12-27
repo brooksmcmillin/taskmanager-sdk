@@ -269,26 +269,38 @@ class TaskManagerClient:
         self,
         project_id: int | None = None,
         status: str | None = None,
-        due_date: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        category: str | None = None,
+        limit: int | None = None,
     ) -> ApiResponse:
         """
         Get todos with optional filtering.
 
         Args:
             project_id: Filter by project ID
-            status: Filter by status (pending, in_progress, completed, cancelled)
-            due_date: Filter by due date
+            status: Filter by status (pending, in_progress, completed, cancelled, overdue, all)
+            start_date: Filter tasks with due_date on or after this date (ISO format)
+            end_date: Filter tasks with due_date on or before this date (ISO format)
+            category: Filter by category name (project name)
+            limit: Maximum number of tasks to return
 
         Returns:
-            ApiResponse with list of todos
+            ApiResponse with TaskListResponse data
         """
         params: dict[str, str | int] = {}
         if project_id is not None:
             params["project_id"] = project_id
         if status is not None:
             params["status"] = status
-        if due_date is not None:
-            params["due_date"] = due_date
+        if start_date is not None:
+            params["start_date"] = start_date
+        if end_date is not None:
+            params["end_date"] = end_date
+        if category is not None:
+            params["category"] = category
+        if limit is not None:
+            params["limit"] = limit
         return self._make_request("GET", "/todos", params=params)
 
     def create_todo(
@@ -296,6 +308,7 @@ class TaskManagerClient:
         title: str,
         project_id: int | None = None,
         description: str | None = None,
+        category: str | None = None,
         priority: str = "medium",
         estimated_hours: float | None = None,
         due_date: str | None = None,
@@ -306,21 +319,24 @@ class TaskManagerClient:
 
         Args:
             title: Todo title
-            project_id: Optional project ID
+            project_id: Optional project ID (alternative to category)
             description: Optional description
+            category: Task category name (maps to project)
             priority: Priority level (low, medium, high, urgent)
             estimated_hours: Estimated hours to complete
             due_date: Due date in ISO format
             tags: list of tags
 
         Returns:
-            ApiResponse with created todo data
+            ApiResponse with TaskCreateResponse data
         """
         data: dict[str, str | int | float | list[str]] = {"title": title}
         if project_id is not None:
             data["project_id"] = project_id
         if description is not None:
             data["description"] = description
+        if category is not None:
+            data["category"] = category
         if priority is not None:
             data["priority"] = priority
         if estimated_hours is not None:
@@ -348,6 +364,7 @@ class TaskManagerClient:
         todo_id: int,
         title: str | None = None,
         description: str | None = None,
+        category: str | None = None,
         priority: str | None = None,
         estimated_hours: float | None = None,
         actual_hours: float | None = None,
@@ -362,21 +379,24 @@ class TaskManagerClient:
             todo_id: Todo ID to update
             title: New title
             description: New description
+            category: New category name (maps to project)
             priority: New priority (low, medium, high, urgent)
             estimated_hours: New estimated hours
             actual_hours: Actual hours spent
             status: New status (pending, in_progress, completed, cancelled)
-            due_date: New due date
+            due_date: New due date (for rescheduling)
             tags: New tags list
 
         Returns:
-            ApiResponse with updated todo data
+            ApiResponse with TaskUpdateResponse data
         """
         data: dict[str, float | str | int | list[str]] = {}
         if title is not None:
             data["title"] = title
         if description is not None:
             data["description"] = description
+        if category is not None:
+            data["category"] = category
         if priority is not None:
             data["priority"] = priority
         if estimated_hours is not None:
@@ -403,20 +423,52 @@ class TaskManagerClient:
         """
         return self._make_request("DELETE", f"/todos/{todo_id}")
 
-    def complete_todo(self, todo_id: int, actual_hours: float) -> ApiResponse:
+    def complete_todo(
+        self, todo_id: int, actual_hours: float | None = None
+    ) -> ApiResponse:
         """
         Mark a todo as completed.
 
         Args:
             todo_id: Todo ID to complete
-            actual_hours: Actual hours spent on the todo
+            actual_hours: Optional actual hours spent on the todo
 
         Returns:
             ApiResponse with completion result
         """
-        return self._make_request(
-            "POST", f"/todos/{todo_id}/complete", {"actual_hours": actual_hours}
-        )
+        data: dict[str, float] = {}
+        if actual_hours is not None:
+            data["actual_hours"] = actual_hours
+        return self._make_request("POST", f"/todos/{todo_id}/complete", data)
+
+    # Category methods
+    def get_categories(self) -> ApiResponse:
+        """
+        Get all task categories with task counts.
+
+        Returns:
+            ApiResponse with CategoryListResponse data
+        """
+        return self._make_request("GET", "/categories")
+
+    # Search methods
+    def search_tasks(
+        self, query: str, category: str | None = None
+    ) -> ApiResponse:
+        """
+        Search tasks by keyword using full-text search.
+
+        Args:
+            query: Search query string
+            category: Optional filter results by category name
+
+        Returns:
+            ApiResponse with TaskSearchResponse data
+        """
+        params: dict[str, str] = {"query": query}
+        if category is not None:
+            params["category"] = category
+        return self._make_request("GET", "/tasks/search", params=params)
 
     # OAuth methods
     def get_oauth_clients(self) -> ApiResponse:
