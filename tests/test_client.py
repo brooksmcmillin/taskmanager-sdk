@@ -228,10 +228,17 @@ class TestTodos:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.headers = {}
-        mock_response.json.return_value = []
+        mock_response.json.return_value = {"tasks": []}
         mock_session.get.return_value = mock_response
 
-        result = client.get_todos(project_id=1, status="completed", due_date="2025-12-31")
+        result = client.get_todos(
+            project_id=1,
+            status="completed",
+            start_date="2025-01-01",
+            end_date="2025-12-31",
+            category="Work",
+            limit=10
+        )
 
         assert result.success is True
         mock_session.get.assert_called_once()
@@ -240,7 +247,10 @@ class TestTodos:
         call_args = mock_session.get.call_args
         assert call_args.kwargs["params"]["project_id"] == 1
         assert call_args.kwargs["params"]["status"] == "completed"
-        assert call_args.kwargs["params"]["due_date"] == "2025-12-31"
+        assert call_args.kwargs["params"]["start_date"] == "2025-01-01"
+        assert call_args.kwargs["params"]["end_date"] == "2025-12-31"
+        assert call_args.kwargs["params"]["category"] == "Work"
+        assert call_args.kwargs["params"]["limit"] == 10
 
     def test_create_todo(self, client: TaskManagerClient, mock_session: Mock) -> None:
         """Test creating a todo."""
@@ -316,7 +326,7 @@ class TestTodos:
         assert result.success is True
 
     def test_complete_todo(self, client: TaskManagerClient, mock_session: Mock) -> None:
-        """Test completing a todo."""
+        """Test completing a todo with actual hours."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.headers = {}
@@ -326,6 +336,110 @@ class TestTodos:
         result = client.complete_todo(1, actual_hours=3.5)
 
         assert result.success is True
+        call_args = mock_session.post.call_args
+        assert call_args.kwargs["json"]["actual_hours"] == 3.5
+
+    def test_complete_todo_without_hours(self, client: TaskManagerClient, mock_session: Mock) -> None:
+        """Test completing a todo without specifying actual hours."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.json.return_value = {"success": True}
+        mock_session.post.return_value = mock_response
+
+        result = client.complete_todo(1)
+
+        assert result.success is True
+        call_args = mock_session.post.call_args
+        assert call_args.kwargs["json"] == {}
+
+    def test_create_todo_with_category(self, client: TaskManagerClient, mock_session: Mock) -> None:
+        """Test creating a todo with category."""
+        mock_response = Mock()
+        mock_response.status_code = 201
+        mock_response.headers = {}
+        mock_response.json.return_value = {"id": 1, "title": "New Todo", "status": "created"}
+        mock_session.post.return_value = mock_response
+
+        result = client.create_todo(
+            title="New Todo",
+            category="Work",
+            priority="high"
+        )
+
+        assert result.success is True
+        call_args = mock_session.post.call_args
+        assert call_args.kwargs["json"]["category"] == "Work"
+
+    def test_update_todo_with_category(self, client: TaskManagerClient, mock_session: Mock) -> None:
+        """Test updating a todo with category."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.json.return_value = {"id": 1, "updated_fields": ["category"], "status": "updated"}
+        mock_session.put.return_value = mock_response
+
+        result = client.update_todo(1, category="Personal")
+
+        assert result.success is True
+        call_args = mock_session.put.call_args
+        assert call_args.kwargs["json"]["category"] == "Personal"
+
+    def test_search_tasks(self, client: TaskManagerClient, mock_session: Mock) -> None:
+        """Test searching tasks."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.json.return_value = {
+            "tasks": [{"id": 1, "title": "Test Todo", "status": "pending", "priority": "medium"}],
+            "count": 1
+        }
+        mock_session.get.return_value = mock_response
+
+        result = client.search_tasks("test")
+
+        assert result.success is True
+        assert result.data["count"] == 1
+        assert len(result.data["tasks"]) == 1
+
+    def test_search_tasks_with_category(self, client: TaskManagerClient, mock_session: Mock) -> None:
+        """Test searching tasks with category filter."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.json.return_value = {"tasks": [], "count": 0}
+        mock_session.get.return_value = mock_response
+
+        result = client.search_tasks("test", category="Work")
+
+        assert result.success is True
+        call_args = mock_session.get.call_args
+        assert call_args.kwargs["params"]["query"] == "test"
+        assert call_args.kwargs["params"]["category"] == "Work"
+
+
+class TestCategories:
+    """Test category methods."""
+
+    def test_get_categories(self, client: TaskManagerClient, mock_session: Mock) -> None:
+        """Test getting list of categories."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.headers = {}
+        mock_response.json.return_value = {
+            "categories": [
+                {"name": "Work", "task_count": 5},
+                {"name": "Personal", "task_count": 3}
+            ]
+        }
+        mock_session.get.return_value = mock_response
+
+        result = client.get_categories()
+
+        assert result.success is True
+        assert len(result.data["categories"]) == 2
+        assert result.data["categories"][0]["name"] == "Work"
+        assert result.data["categories"][0]["task_count"] == 5
 
 
 class TestOAuth:
