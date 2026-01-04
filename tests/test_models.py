@@ -24,7 +24,9 @@ class TestApiResponse:
 
     def test_error_response(self) -> None:
         """Test creating an error API response."""
-        response = ApiResponse(success=False, error="Something went wrong", status_code=400)
+        response = ApiResponse(
+            success=False, error="Something went wrong", status_code=400
+        )
         assert response.success is False
         assert response.error == "Something went wrong"
         assert response.status_code == 400
@@ -41,7 +43,7 @@ class TestUser:
 
     def test_user_creation(self, sample_user: dict[str, str | int]) -> None:
         """Test creating a User instance."""
-        user = User(**sample_user)
+        user = User(**sample_user)  # type: ignore[arg-type]
         assert user.id == 1
         assert user.username == "testuser"
         assert user.email == "test@example.com"
@@ -59,7 +61,7 @@ class TestProject:
 
     def test_project_creation(self, sample_project: dict[str, str | int]) -> None:
         """Test creating a Project instance."""
-        project = Project(**sample_project)
+        project = Project(**sample_project)  # type: ignore[arg-type]
         assert project.id == 1
         assert project.name == "Test Project"
         assert project.color == "#FF5733"
@@ -75,7 +77,7 @@ class TestProject:
             color="#FF5733",
             description=None,
             created_at="2025-01-01T00:00:00Z",
-            updated_at="2025-01-01T00:00:00Z"
+            updated_at="2025-01-01T00:00:00Z",
         )
         assert project.description is None
 
@@ -88,7 +90,7 @@ class TestProject:
             color="#FF5733",
             description="Desc",
             created_at="2025-01-01T00:00:00Z",
-            updated_at="2025-01-01T00:00:00Z"
+            updated_at="2025-01-01T00:00:00Z",
         )
         assert isinstance(project.id, int)
         assert isinstance(project.user_id, int)
@@ -101,9 +103,11 @@ class TestProject:
 class TestTodo:
     """Test Todo model."""
 
-    def test_todo_creation(self, sample_todo: dict[str, str | int | float | list[str] | None]) -> None:
+    def test_todo_creation(
+        self, sample_todo: dict[str, str | int | float | list[str] | None]
+    ) -> None:
         """Test creating a Todo instance."""
-        todo = Todo(**sample_todo)
+        todo = Todo(**sample_todo)  # type: ignore[arg-type]
         assert todo.id == 1
         assert todo.title == "Test Todo"
         assert todo.status == "pending"
@@ -127,7 +131,7 @@ class TestTodo:
             tags=None,
             created_at="2025-01-01T00:00:00Z",
             updated_at="2025-01-01T00:00:00Z",
-            completed_at=None
+            completed_at=None,
         )
         assert todo.project_id is None
         assert todo.description is None
@@ -151,7 +155,7 @@ class TestTodo:
             tags=["tag1"],
             created_at="2025-01-01T00:00:00Z",
             updated_at="2025-01-01T00:00:00Z",
-            completed_at=None
+            completed_at=None,
         )
         assert isinstance(todo.id, int)
         assert isinstance(todo.user_id, int)
@@ -162,9 +166,11 @@ class TestTodo:
 class TestOAuthClient:
     """Test OAuthClient model."""
 
-    def test_oauth_client_creation(self, sample_oauth_client: dict[str, str | int | bool | list[str]]) -> None:
+    def test_oauth_client_creation(
+        self, sample_oauth_client: dict[str, str | int | bool | list[str]]
+    ) -> None:
         """Test creating an OAuthClient instance."""
-        client = OAuthClient(**sample_oauth_client)
+        client = OAuthClient(**sample_oauth_client)  # type: ignore[arg-type]
         assert client.id == 1
         assert client.client_id == "test_client_id"
         assert client.name == "Test OAuth Client"
@@ -183,7 +189,7 @@ class TestOAuthClient:
             grant_types=["authorization_code"],
             scopes=["read"],
             is_active=True,
-            created_at="2025-01-01T00:00:00Z"
+            created_at="2025-01-01T00:00:00Z",
         )
         assert isinstance(client.redirect_uris, list)
         assert isinstance(client.grant_types, list)
@@ -194,9 +200,11 @@ class TestOAuthClient:
 class TestOAuthToken:
     """Test OAuthToken model."""
 
-    def test_oauth_token_creation(self, sample_oauth_token: dict[str, str | int]) -> None:
+    def test_oauth_token_creation(
+        self, sample_oauth_token: dict[str, str | int]
+    ) -> None:
         """Test creating an OAuthToken instance."""
-        token = OAuthToken(**sample_oauth_token)
+        token = OAuthToken(**sample_oauth_token)  # type: ignore[arg-type]
         assert token.access_token == "test_access_token"
         assert token.token_type == "Bearer"
         assert token.expires_in == 3600
@@ -205,11 +213,7 @@ class TestOAuthToken:
 
     def test_oauth_token_minimal(self) -> None:
         """Test creating an OAuthToken with only required fields."""
-        token = OAuthToken(
-            access_token="test",
-            token_type="Bearer",
-            expires_in=3600
-        )
+        token = OAuthToken(access_token="test", token_type="Bearer", expires_in=3600)
         assert token.access_token == "test"
         assert token.refresh_token is None
         assert token.scope is None
@@ -221,7 +225,7 @@ class TestOAuthToken:
             token_type="Bearer",
             expires_in=3600,
             refresh_token="refresh",
-            scope="read"
+            scope="read",
         )
         assert isinstance(token.access_token, str)
         assert isinstance(token.token_type, str)
@@ -234,8 +238,7 @@ class TestOAuthError:
     def test_oauth_error_creation(self) -> None:
         """Test creating an OAuthError instance."""
         error = OAuthError(
-            error="invalid_grant",
-            error_description="The authorization code is invalid"
+            error="invalid_grant", error_description="The authorization code is invalid"
         )
         assert error.error == "invalid_grant"
         assert error.error_description == "The authorization code is invalid"
@@ -248,6 +251,8 @@ class TestOAuthError:
 
     def test_oauth_error_type_hints(self) -> None:
         """Test OAuthError type annotations."""
-        error = OAuthError(error="server_error", error_description="Server error occurred")
+        error = OAuthError(
+            error="server_error", error_description="Server error occurred"
+        )
         assert isinstance(error.error, str)
         assert isinstance(error.error_description, str)

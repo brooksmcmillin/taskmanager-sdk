@@ -5,6 +5,7 @@ from typing import Any
 @dataclass
 class ApiResponse:
     """Response object for all API calls."""
+
     success: bool
     data: Any | None = None
     error: str | None = None
@@ -14,6 +15,7 @@ class ApiResponse:
 @dataclass
 class User:
     """User model."""
+
     id: int
     username: str
     email: str
@@ -22,6 +24,7 @@ class User:
 @dataclass
 class Project:
     """Project model."""
+
     id: int
     name: str
     color: str
@@ -34,6 +37,7 @@ class Project:
 @dataclass
 class Todo:
     """Todo model."""
+
     id: int
     title: str
     description: str | None
@@ -53,6 +57,7 @@ class Todo:
 @dataclass
 class OAuthClient:
     """OAuth client model."""
+
     id: int
     name: str
     client_id: str
@@ -66,6 +71,7 @@ class OAuthClient:
 @dataclass
 class OAuthToken:
     """OAuth token response model."""
+
     access_token: str
     token_type: str
     expires_in: int
@@ -76,6 +82,7 @@ class OAuthToken:
 @dataclass
 class OAuthError:
     """OAuth error response model."""
+
     error: str
     error_description: str | None = None
 
@@ -83,6 +90,7 @@ class OAuthError:
 @dataclass
 class Task:
     """Task object returned by API endpoints."""
+
     id: int
     title: str
     status: str
@@ -100,12 +108,14 @@ class Task:
 @dataclass
 class TaskListResponse:
     """Response containing a list of tasks."""
+
     tasks: list[Task]
 
 
 @dataclass
 class TaskCreateResponse:
     """Response from creating a task."""
+
     id: int
     title: str
     status: str
@@ -114,6 +124,7 @@ class TaskCreateResponse:
 @dataclass
 class TaskUpdateResponse:
     """Response from updating a task."""
+
     id: int
     updated_fields: list[str]
     status: str
@@ -122,6 +133,7 @@ class TaskUpdateResponse:
 @dataclass
 class TaskSearchResponse:
     """Response from searching tasks."""
+
     tasks: list[Task]
     count: int
 
@@ -129,6 +141,7 @@ class TaskSearchResponse:
 @dataclass
 class Category:
     """Category with task count."""
+
     name: str
     task_count: int
 
@@ -136,4 +149,5 @@ class Category:
 @dataclass
 class CategoryListResponse:
     """Response containing a list of categories."""
+
     categories: list[Category]

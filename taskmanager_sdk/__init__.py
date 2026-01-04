@@ -6,14 +6,14 @@ including authentication, project management, todo management, reporting, and OA
 
 Basic usage:
     >>> from taskmanager_sdk import TaskManagerClient, create_authenticated_client
-    >>> 
+    >>>
     >>> # Method 1: Create client and authenticate manually
     >>> client = TaskManagerClient("http://localhost:4321/api")
     >>> response = client.login("username", "password")
-    >>> 
+    >>>
     >>> # Method 2: Create pre-authenticated client
     >>> client = create_authenticated_client("username", "password")
-    >>> 
+    >>>
     >>> # Use the client
     >>> projects = client.get_projects()
     >>> todos = client.get_todos()
