@@ -452,9 +452,7 @@ class TaskManagerClient:
         return self._make_request("GET", "/categories")
 
     # Search methods
-    def search_tasks(
-        self, query: str, category: str | None = None
-    ) -> ApiResponse:
+    def search_tasks(self, query: str, category: str | None = None) -> ApiResponse:
         """
         Search tasks by keyword using full-text search.
 

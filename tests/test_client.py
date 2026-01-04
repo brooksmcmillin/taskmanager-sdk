@@ -46,7 +46,12 @@ class TestClientInitialization:
 class TestAuthentication:
     """Test authentication methods."""
 
-    def test_login_success(self, client: TaskManagerClient, mock_session: Mock, sample_user: dict[str, str | int]) -> None:
+    def test_login_success(
+        self,
+        client: TaskManagerClient,
+        mock_session: Mock,
+        sample_user: dict[str, str | int],
+    ) -> None:
         """Test successful login."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -71,7 +76,9 @@ class TestAuthentication:
         with pytest.raises(AuthenticationError):
             client.login("testuser", "wrongpassword")
 
-    def test_register_success(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_register_success(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test successful registration."""
         mock_response = Mock()
         mock_response.status_code = 201
@@ -79,16 +86,19 @@ class TestAuthentication:
         mock_response.json.return_value = {
             "success": True,
             "message": "User created successfully",
-            "userId": 1
+            "userId": 1,
         }
         mock_session.post.return_value = mock_response
 
         result = client.register("newuser", "new@example.com", "password123")
 
         assert result.success is True
+        assert result.data is not None
         assert result.data["userId"] == 1
 
-    def test_logout_success(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_logout_success(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test successful logout."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -100,7 +110,9 @@ class TestAuthentication:
 
         assert result.success is True
 
-    def test_create_authenticated_client(self, mock_session: Mock, sample_user: dict[str, str | int]) -> None:
+    def test_create_authenticated_client(
+        self, mock_session: Mock, sample_user: dict[str, str | int]
+    ) -> None:
         """Test create_authenticated_client helper function."""
         from unittest.mock import patch
 
@@ -109,7 +121,7 @@ class TestAuthentication:
         mock_response.headers = {}
         mock_response.json.return_value = {"success": True, "user": sample_user}
 
-        with patch('taskmanager_sdk.client.requests.Session') as mock_session_class:
+        with patch("taskmanager_sdk.client.requests.Session") as mock_session_class:
             mock_session_class.return_value = mock_session
             mock_session.post.return_value = mock_response
 
@@ -120,7 +132,12 @@ class TestAuthentication:
 class TestProjects:
     """Test project management methods."""
 
-    def test_get_projects(self, client: TaskManagerClient, mock_session: Mock, sample_project: dict[str, str | int]) -> None:
+    def test_get_projects(
+        self,
+        client: TaskManagerClient,
+        mock_session: Mock,
+        sample_project: dict[str, str | int],
+    ) -> None:
         """Test getting list of projects."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -131,10 +148,13 @@ class TestProjects:
         result = client.get_projects()
 
         assert result.success is True
+        assert result.data is not None
         assert len(result.data) == 1
         assert result.data[0]["name"] == "Test Project"
 
-    def test_create_project(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_create_project(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test creating a project."""
         mock_response = Mock()
         mock_response.status_code = 201
@@ -143,15 +163,16 @@ class TestProjects:
         mock_session.post.return_value = mock_response
 
         result = client.create_project(
-            name="New Project",
-            description="A new project",
-            color="#FF5733"
+            name="New Project", description="A new project", color="#FF5733"
         )
 
         assert result.success is True
+        assert result.data is not None
         assert result.data["id"] == 1
 
-    def test_create_project_minimal(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_create_project_minimal(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test creating a project with only required fields."""
         mock_response = Mock()
         mock_response.status_code = 201
@@ -168,7 +189,12 @@ class TestProjects:
         call_args = mock_session.post.call_args
         assert call_args.kwargs["json"] == {"name": "New Project"}
 
-    def test_get_project(self, client: TaskManagerClient, mock_session: Mock, sample_project: dict[str, str | int]) -> None:
+    def test_get_project(
+        self,
+        client: TaskManagerClient,
+        mock_session: Mock,
+        sample_project: dict[str, str | int],
+    ) -> None:
         """Test getting a specific project."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -179,9 +205,12 @@ class TestProjects:
         result = client.get_project(1)
 
         assert result.success is True
+        assert result.data is not None
         assert result.data["id"] == 1
 
-    def test_update_project(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_update_project(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test updating a project."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -193,7 +222,9 @@ class TestProjects:
 
         assert result.success is True
 
-    def test_delete_project(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_delete_project(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test deleting a project."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -209,7 +240,12 @@ class TestProjects:
 class TestTodos:
     """Test todo management methods."""
 
-    def test_get_todos(self, client: TaskManagerClient, mock_session: Mock, sample_todo: dict[str, str | int | float | list[str] | None]) -> None:
+    def test_get_todos(
+        self,
+        client: TaskManagerClient,
+        mock_session: Mock,
+        sample_todo: dict[str, str | int | float | list[str] | None],
+    ) -> None:
         """Test getting list of todos."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -220,10 +256,13 @@ class TestTodos:
         result = client.get_todos()
 
         assert result.success is True
+        assert result.data is not None
         assert len(result.data) == 1
         assert result.data[0]["title"] == "Test Todo"
 
-    def test_get_todos_with_filters(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_get_todos_with_filters(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test getting todos with filters."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -237,7 +276,7 @@ class TestTodos:
             start_date="2025-01-01",
             end_date="2025-12-31",
             category="Work",
-            limit=10
+            limit=10,
         )
 
         assert result.success is True
@@ -265,13 +304,16 @@ class TestTodos:
             description="A new todo",
             priority="high",
             estimated_hours=3.5,
-            tags=["urgent"]
+            tags=["urgent"],
         )
 
         assert result.success is True
+        assert result.data is not None
         assert result.data["id"] == 1
 
-    def test_create_todo_minimal(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_create_todo_minimal(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test creating a todo with only required fields."""
         mock_response = Mock()
         mock_response.status_code = 201
@@ -283,7 +325,12 @@ class TestTodos:
 
         assert result.success is True
 
-    def test_get_todo(self, client: TaskManagerClient, mock_session: Mock, sample_todo: dict[str, str | int | float | list[str] | None]) -> None:
+    def test_get_todo(
+        self,
+        client: TaskManagerClient,
+        mock_session: Mock,
+        sample_todo: dict[str, str | int | float | list[str] | None],
+    ) -> None:
         """Test getting a specific todo."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -294,6 +341,7 @@ class TestTodos:
         result = client.get_todo(1)
 
         assert result.success is True
+        assert result.data is not None
         assert result.data["id"] == 1
 
     def test_update_todo(self, client: TaskManagerClient, mock_session: Mock) -> None:
@@ -305,10 +353,7 @@ class TestTodos:
         mock_session.put.return_value = mock_response
 
         result = client.update_todo(
-            1,
-            title="Updated Todo",
-            status="in_progress",
-            actual_hours=2.0
+            1, title="Updated Todo", status="in_progress", actual_hours=2.0
         )
 
         assert result.success is True
@@ -339,7 +384,9 @@ class TestTodos:
         call_args = mock_session.post.call_args
         assert call_args.kwargs["json"]["actual_hours"] == 3.5
 
-    def test_complete_todo_without_hours(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_complete_todo_without_hours(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test completing a todo without specifying actual hours."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -353,30 +400,38 @@ class TestTodos:
         call_args = mock_session.post.call_args
         assert call_args.kwargs["json"] == {}
 
-    def test_create_todo_with_category(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_create_todo_with_category(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test creating a todo with category."""
         mock_response = Mock()
         mock_response.status_code = 201
         mock_response.headers = {}
-        mock_response.json.return_value = {"id": 1, "title": "New Todo", "status": "created"}
+        mock_response.json.return_value = {
+            "id": 1,
+            "title": "New Todo",
+            "status": "created",
+        }
         mock_session.post.return_value = mock_response
 
-        result = client.create_todo(
-            title="New Todo",
-            category="Work",
-            priority="high"
-        )
+        result = client.create_todo(title="New Todo", category="Work", priority="high")
 
         assert result.success is True
         call_args = mock_session.post.call_args
         assert call_args.kwargs["json"]["category"] == "Work"
 
-    def test_update_todo_with_category(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_update_todo_with_category(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test updating a todo with category."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.headers = {}
-        mock_response.json.return_value = {"id": 1, "updated_fields": ["category"], "status": "updated"}
+        mock_response.json.return_value = {
+            "id": 1,
+            "updated_fields": ["category"],
+            "status": "updated",
+        }
         mock_session.put.return_value = mock_response
 
         result = client.update_todo(1, category="Personal")
@@ -391,18 +446,28 @@ class TestTodos:
         mock_response.status_code = 200
         mock_response.headers = {}
         mock_response.json.return_value = {
-            "tasks": [{"id": 1, "title": "Test Todo", "status": "pending", "priority": "medium"}],
-            "count": 1
+            "tasks": [
+                {
+                    "id": 1,
+                    "title": "Test Todo",
+                    "status": "pending",
+                    "priority": "medium",
+                }
+            ],
+            "count": 1,
         }
         mock_session.get.return_value = mock_response
 
         result = client.search_tasks("test")
 
         assert result.success is True
+        assert result.data is not None
         assert result.data["count"] == 1
         assert len(result.data["tasks"]) == 1
 
-    def test_search_tasks_with_category(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_search_tasks_with_category(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test searching tasks with category filter."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -421,7 +486,9 @@ class TestTodos:
 class TestCategories:
     """Test category methods."""
 
-    def test_get_categories(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_get_categories(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test getting list of categories."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -429,7 +496,7 @@ class TestCategories:
         mock_response.json.return_value = {
             "categories": [
                 {"name": "Work", "task_count": 5},
-                {"name": "Personal", "task_count": 3}
+                {"name": "Personal", "task_count": 3},
             ]
         }
         mock_session.get.return_value = mock_response
@@ -437,6 +504,7 @@ class TestCategories:
         result = client.get_categories()
 
         assert result.success is True
+        assert result.data is not None
         assert len(result.data["categories"]) == 2
         assert result.data["categories"][0]["name"] == "Work"
         assert result.data["categories"][0]["task_count"] == 5
@@ -445,7 +513,12 @@ class TestCategories:
 class TestOAuth:
     """Test OAuth methods."""
 
-    def test_get_oauth_clients(self, client: TaskManagerClient, mock_session: Mock, sample_oauth_client: dict[str, str | int | bool | list[str]]) -> None:
+    def test_get_oauth_clients(
+        self,
+        client: TaskManagerClient,
+        mock_session: Mock,
+        sample_oauth_client: dict[str, str | int | bool | list[str]],
+    ) -> None:
         """Test getting list of OAuth clients."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -456,17 +529,23 @@ class TestOAuth:
         result = client.get_oauth_clients()
 
         assert result.success is True
+        assert result.data is not None
         assert len(result.data) == 1
         assert result.data[0]["name"] == "Test OAuth Client"
 
-    def test_create_oauth_client(self, client: TaskManagerClient, mock_session: Mock, sample_oauth_client: dict[str, str | int | bool | list[str]]) -> None:
+    def test_create_oauth_client(
+        self,
+        client: TaskManagerClient,
+        mock_session: Mock,
+        sample_oauth_client: dict[str, str | int | bool | list[str]],
+    ) -> None:
         """Test creating an OAuth client."""
         mock_response = Mock()
         mock_response.status_code = 201
         mock_response.headers = {}
         mock_response.json.return_value = {
             **sample_oauth_client,
-            "client_secret": "test_secret"
+            "client_secret": "test_secret",
         }
         mock_session.post.return_value = mock_response
 
@@ -474,10 +553,11 @@ class TestOAuth:
             name="New OAuth Client",
             redirect_uris=["http://localhost:3000/callback"],
             grant_types=["authorization_code"],
-            scopes=["read", "write"]
+            scopes=["read", "write"],
         )
 
         assert result.success is True
+        assert result.data is not None
         assert "client_secret" in result.data
 
     def test_get_jwks(self, client: TaskManagerClient, mock_session: Mock) -> None:
@@ -493,7 +573,7 @@ class TestOAuth:
                     "kid": "test_key_id",
                     "alg": "RS256",
                     "n": "test_n",
-                    "e": "AQAB"
+                    "e": "AQAB",
                 }
             ]
         }
@@ -502,10 +582,13 @@ class TestOAuth:
         result = client.get_jwks()
 
         assert result.success is True
+        assert result.data is not None
         assert "keys" in result.data
         assert len(result.data["keys"]) == 1
 
-    def test_oauth_authorize(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_oauth_authorize(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test OAuth authorization endpoint."""
         mock_response = Mock()
         mock_response.status_code = 302
@@ -518,12 +601,17 @@ class TestOAuth:
             redirect_uri="http://localhost:3000/callback",
             response_type="code",
             scope="read",
-            state="test_state"
+            state="test_state",
         )
 
         assert result.success is True
 
-    def test_oauth_token(self, client: TaskManagerClient, mock_session: Mock, sample_oauth_token: dict[str, str | int]) -> None:
+    def test_oauth_token(
+        self,
+        client: TaskManagerClient,
+        mock_session: Mock,
+        sample_oauth_token: dict[str, str | int],
+    ) -> None:
         """Test OAuth token endpoint."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -536,17 +624,20 @@ class TestOAuth:
             client_id="test_client",
             client_secret="test_secret",
             code="test_code",
-            redirect_uri="http://localhost:3000/callback"
+            redirect_uri="http://localhost:3000/callback",
         )
 
         assert result.success is True
+        assert result.data is not None
         assert result.data["access_token"] == "test_access_token"
 
 
 class TestErrorHandling:
     """Test error handling."""
 
-    def test_401_raises_authentication_error(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_401_raises_authentication_error(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test that 401 status raises AuthenticationError."""
         mock_response = Mock()
         mock_response.status_code = 401
@@ -557,7 +648,9 @@ class TestErrorHandling:
         with pytest.raises(AuthenticationError):
             client.get_projects()
 
-    def test_403_raises_authorization_error(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_403_raises_authorization_error(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test that 403 status raises AuthorizationError."""
         mock_response = Mock()
         mock_response.status_code = 403
@@ -568,7 +661,9 @@ class TestErrorHandling:
         with pytest.raises(AuthorizationError):
             client.get_projects()
 
-    def test_404_raises_not_found_error(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_404_raises_not_found_error(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test that 404 status raises NotFoundError."""
         mock_response = Mock()
         mock_response.status_code = 404
@@ -579,7 +674,9 @@ class TestErrorHandling:
         with pytest.raises(NotFoundError):
             client.get_project(999)
 
-    def test_400_raises_validation_error(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_400_raises_validation_error(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test that 400 status raises ValidationError."""
         mock_response = Mock()
         mock_response.status_code = 400
@@ -590,7 +687,9 @@ class TestErrorHandling:
         with pytest.raises(ValidationError):
             client.create_project(name="")
 
-    def test_429_raises_rate_limit_error(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_429_raises_rate_limit_error(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test that 429 status raises RateLimitError."""
         mock_response = Mock()
         mock_response.status_code = 429
@@ -601,7 +700,9 @@ class TestErrorHandling:
         with pytest.raises(RateLimitError):
             client.get_projects()
 
-    def test_500_raises_server_error(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_500_raises_server_error(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test that 500 status raises ServerError."""
         mock_response = Mock()
         mock_response.status_code = 500
@@ -614,12 +715,16 @@ class TestErrorHandling:
 
     def test_network_error(self, client: TaskManagerClient, mock_session: Mock) -> None:
         """Test that network errors raise NetworkError."""
-        mock_session.get.side_effect = requests.exceptions.ConnectionError("Connection failed")
+        mock_session.get.side_effect = requests.exceptions.ConnectionError(
+            "Connection failed"
+        )
 
         with pytest.raises(NetworkError):
             client.get_projects()
 
-    def test_cookie_handling(self, client: TaskManagerClient, mock_session: Mock) -> None:
+    def test_cookie_handling(
+        self, client: TaskManagerClient, mock_session: Mock
+    ) -> None:
         """Test that cookies are properly handled."""
         mock_response = Mock()
         mock_response.status_code = 200

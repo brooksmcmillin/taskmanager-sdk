@@ -42,11 +42,7 @@ def mock_response() -> Mock:
 @pytest.fixture
 def sample_user() -> dict[str, str | int]:
     """Sample user data."""
-    return {
-        "id": 1,
-        "username": "testuser",
-        "email": "test@example.com"
-    }
+    return {"id": 1, "username": "testuser", "email": "test@example.com"}
 
 
 @pytest.fixture
@@ -59,7 +55,7 @@ def sample_project() -> dict[str, str | int]:
         "description": "A test project",
         "color": "#FF5733",
         "created_at": "2025-01-01T00:00:00Z",
-        "updated_at": "2025-01-01T00:00:00Z"
+        "updated_at": "2025-01-01T00:00:00Z",
     }
 
 
@@ -80,7 +76,7 @@ def sample_todo() -> dict[str, str | int | float | list[str] | None]:
         "tags": ["test", "sample"],
         "created_at": "2025-01-01T00:00:00Z",
         "updated_at": "2025-01-01T00:00:00Z",
-        "completed_at": None
+        "completed_at": None,
     }
 
 
@@ -95,7 +91,7 @@ def sample_oauth_client() -> dict[str, str | int | bool | list[str]]:
         "grant_types": ["authorization_code"],
         "scopes": ["read"],
         "is_active": True,
-        "created_at": "2025-01-01T00:00:00Z"
+        "created_at": "2025-01-01T00:00:00Z",
     }
 
 
@@ -107,5 +103,5 @@ def sample_oauth_token() -> dict[str, str | int]:
         "token_type": "Bearer",
         "expires_in": 3600,
         "refresh_token": "test_refresh_token",
-        "scope": "read write"
+        "scope": "read write",
     }
