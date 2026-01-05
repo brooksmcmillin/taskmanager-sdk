@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "taskmanager-sdk"
-version = "0.1.3"
+version = "0.1.4"
 description = "Python SDK for TaskManager API"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -37,7 +37,9 @@ dev = [
     "flake8",
     "mypy",
     "types-requests",
-    "ruff"
+    "ruff",
+    "pre-commit>=4.5.1",
+    "pyright>=1.1.407",
 ]
 
 [project.urls]

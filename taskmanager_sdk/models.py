@@ -88,6 +88,18 @@ class OAuthError:
 
 
 @dataclass
+class DeviceAuthorizationResponse:
+    """Response from the device authorization endpoint (RFC 8628)."""
+
+    device_code: str
+    user_code: str
+    verification_uri: str
+    expires_in: int
+    interval: int
+    verification_uri_complete: str | None = None
+
+
+@dataclass
 class Task:
     """Task object returned by API endpoints."""
 

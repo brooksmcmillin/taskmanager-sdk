@@ -517,6 +517,46 @@ class TaskManagerClient:
             data["scopes"] = scopes
         return self._make_request("POST", "/oauth/clients", data)
 
+    def update_oauth_client(
+        self,
+        client_id: str,
+        name: str,
+        redirect_uris: list[str],
+        grant_types: list[str] | None = None,
+        scopes: list[str] | None = None,
+    ) -> ApiResponse:
+        """
+        Update an OAuth client.
+
+        Args:
+            client_id: OAuth client ID to update
+            name: Client name
+            redirect_uris: List of redirect URIs
+            grant_types: List of grant types (defaults to ['authorization_code'])
+            scopes: List of scopes (defaults to ['read'])
+
+        Returns:
+            ApiResponse with updated OAuth client data
+        """
+        data: dict[str, str | list[str]] = {"name": name, "redirectUris": redirect_uris}
+        if grant_types is not None:
+            data["grantTypes"] = grant_types
+        if scopes is not None:
+            data["scopes"] = scopes
+        return self._make_request("PUT", f"/oauth/clients/{client_id}", data)
+
+    def delete_oauth_client(self, client_id: str) -> ApiResponse:
+        """
+        Delete an OAuth client.
+
+        Args:
+            client_id: OAuth client ID to delete
+
+        Returns:
+            ApiResponse with deletion result
+        """
+        return self._make_request("DELETE", f"/oauth/clients/{client_id}")
+
     def get_jwks(self) -> ApiResponse:
         """
         Get JSON Web Key Set.
@@ -525,6 +565,117 @@ class TaskManagerClient:
             ApiResponse with JWKS data
         """
         return self._make_request("GET", "/oauth/jwks")
+
+    def request_device_code(
+        self, client_id: str, scope: str | None = None
+    ) -> ApiResponse:
+        """
+        Request device authorization code (RFC 8628).
+
+        Initiates the OAuth 2.0 Device Authorization Grant flow.
+        The CLI calls this endpoint to get a device code and user code.
+        The user then visits the verification URL and enters the user code.
+
+        Args:
+            client_id: OAuth client ID
+            scope: Space-separated list of requested scopes (optional)
+
+        Returns:
+            ApiResponse with DeviceAuthorizationResponse data
+        """
+        data: dict[str, str] = {"client_id": client_id}
+        if scope is not None:
+            data["scope"] = scope
+
+        # Device code endpoint uses form encoding
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        try:
+            response = self.session.post(
+                f"{self.base_url}/oauth/device/code", data=data, headers=headers
+            )
+
+            if response.status_code >= 400:
+                try:
+                    error_data = response.json()
+                    error_message = error_data.get(
+                        "error_description",
+                        error_data.get("error", f"HTTP {response.status_code}"),
+                    )
+                except (ValueError, requests.exceptions.JSONDecodeError):
+                    error_message = f"HTTP {response.status_code}: {response.text}"
+
+                if response.status_code == 401:
+                    raise AuthenticationError(error_message)
+                elif response.status_code >= 500:
+                    raise ServerError(error_message)
+
+                return ApiResponse(
+                    success=False, error=error_message, status_code=response.status_code
+                )
+
+            try:
+                json_data = response.json()
+            except (ValueError, requests.exceptions.JSONDecodeError):
+                json_data = None
+
+            return ApiResponse(
+                success=True, data=json_data, status_code=response.status_code
+            )
+
+        except requests.exceptions.RequestException as e:
+            raise NetworkError(str(e))
+
+    def authorize_device(self, user_code: str, action: str) -> ApiResponse:
+        """
+        Authorize or deny device (user consent).
+
+        Handles the user's authorization decision for the device flow.
+        Called when the user approves or denies access on the device verification page.
+        Requires user authentication via session cookie.
+
+        Args:
+            user_code: The user code entered by the user (e.g., WDJB-MJHT)
+            action: User's authorization decision ('allow' or 'deny')
+
+        Returns:
+            ApiResponse with authorization result
+        """
+        data = {"user_code": user_code, "action": action}
+
+        # Device authorize endpoint uses form encoding
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        try:
+            response = self.session.post(
+                f"{self.base_url}/oauth/device/authorize",
+                data=data,
+                headers=headers,
+                cookies=self.cookies,
+            )
+
+            if response.status_code >= 400:
+                try:
+                    error_data = response.json()
+                    error_message = error_data.get(
+                        "error", f"HTTP {response.status_code}"
+                    )
+                except (ValueError, requests.exceptions.JSONDecodeError):
+                    error_message = f"HTTP {response.status_code}: {response.text}"
+
+                if response.status_code == 401:
+                    raise AuthenticationError(error_message)
+                elif response.status_code >= 500:
+                    raise ServerError(error_message)
+
+                return ApiResponse(
+                    success=False, error=error_message, status_code=response.status_code
+                )
+
+            return ApiResponse(success=True, status_code=response.status_code)
+
+        except requests.exceptions.RequestException as e:
+            raise NetworkError(str(e))
 
     def oauth_authorize(
         self,
@@ -640,18 +791,23 @@ class TaskManagerClient:
         redirect_uri: str | None = None,
         code_verifier: str | None = None,
         refresh_token: str | None = None,
+        device_code: str | None = None,
+        scope: str | None = None,
     ) -> ApiResponse:
         """
         OAuth token endpoint.
 
         Args:
-            grant_type: OAuth grant type ('authorization_code' or 'refresh_token')
+            grant_type: OAuth grant type ('authorization_code', 'refresh_token',
+                'client_credentials', or 'urn:ietf:params:oauth:grant-type:device_code')
             client_id: OAuth client ID
             client_secret: OAuth client secret
             code: Authorization code (required for authorization_code grant)
             redirect_uri: Redirect URI (required for authorization_code grant)
             code_verifier: PKCE code verifier (for PKCE flow)
             refresh_token: Refresh token (required for refresh_token grant)
+            device_code: Device code (required for device_code grant)
+            scope: Scope (optional for client_credentials grant)
 
         Returns:
             ApiResponse with token data
@@ -672,6 +828,12 @@ class TaskManagerClient:
         elif grant_type == "refresh_token":
             if refresh_token is not None:
                 data["refresh_token"] = refresh_token
+        elif grant_type == "urn:ietf:params:oauth:grant-type:device_code":
+            if device_code is not None:
+                data["device_code"] = device_code
+        elif grant_type == "client_credentials":
+            if scope is not None:
+                data["scope"] = scope
 
         # OAuth token endpoint uses form encoding
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
