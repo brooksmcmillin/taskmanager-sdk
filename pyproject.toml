@@ -37,7 +37,8 @@ dev = [
     "flake8",
     "mypy",
     "types-requests",
-    "ruff"
+    "ruff",
+    "pre-commit>=4.5.1",
 ]
 
 [project.urls]
