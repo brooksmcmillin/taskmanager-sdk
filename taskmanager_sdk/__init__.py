@@ -11,18 +11,26 @@ Basic usage:
     >>> client = TaskManagerClient("http://localhost:4321/api")
     >>> response = client.login("username", "password")
     >>>
-    >>> # Method 2: Create pre-authenticated client
+    >>> # Method 2: Create pre-authenticated client (session-based)
     >>> client = create_authenticated_client("username", "password")
+    >>>
+    >>> # Method 3: Create client with OAuth2 Client Credentials (recommended for S2S)
+    >>> from taskmanager_sdk import create_client_credentials_client
+    >>> client = create_client_credentials_client("client_id", "client_secret")
     >>>
     >>> # Use the client
     >>> projects = client.get_projects()
     >>> todos = client.get_todos()
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "TaskManager SDK"
 
-from .client import TaskManagerClient, create_authenticated_client
+from .client import (
+    TaskManagerClient,
+    create_authenticated_client,
+    create_client_credentials_client,
+)
 from .exceptions import (
     AuthenticationError,
     AuthorizationError,
@@ -54,6 +62,7 @@ __all__ = [
     # Client classes
     "TaskManagerClient",
     "create_authenticated_client",
+    "create_client_credentials_client",
     # Models
     "ApiResponse",
     "Category",

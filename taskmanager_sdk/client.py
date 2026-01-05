@@ -26,6 +26,7 @@ class TaskManagerClient:
         self,
         base_url: str = "http://localhost:4321/api",
         session: requests.Session | None = None,
+        access_token: str | None = None,
     ) -> None:
         """
         Initialize the TaskManager client.
@@ -33,6 +34,7 @@ class TaskManagerClient:
         Args:
             base_url: Base URL for the TaskManager API
             session: Optional requests session to use for HTTP calls
+            access_token: Optional OAuth access token for Bearer auth
         """
         self.base_url = base_url.rstrip("/")
         self.session = session or requests.Session()
@@ -40,6 +42,8 @@ class TaskManagerClient:
             {"Content-Type": "application/json", "Accept": "application/json"}
         )
         self.cookies: dict[str, str] = {}
+        self.access_token: str | None = access_token
+        self.token_expires_at: float | None = None
 
     def _make_request(
         self,
@@ -71,19 +75,28 @@ class TaskManagerClient:
         """
         url = f"{self.base_url}{endpoint}"
 
+        # Build headers with Bearer token auth if available
+        headers: dict[str, str] = {}
+        if self.access_token:
+            headers["Authorization"] = f"Bearer {self.access_token}"
+
         try:
             if method.upper() == "GET":
-                response = self.session.get(url, params=params, cookies=self.cookies)
+                response = self.session.get(
+                    url, params=params, cookies=self.cookies, headers=headers
+                )
             elif method.upper() == "POST":
                 response = self.session.post(
-                    url, json=data, params=params, cookies=self.cookies
+                    url, json=data, params=params, cookies=self.cookies, headers=headers
                 )
             elif method.upper() == "PUT":
                 response = self.session.put(
-                    url, json=data, params=params, cookies=self.cookies
+                    url, json=data, params=params, cookies=self.cookies, headers=headers
                 )
             elif method.upper() == "DELETE":
-                response = self.session.delete(url, params=params, cookies=self.cookies)
+                response = self.session.delete(
+                    url, params=params, cookies=self.cookies, headers=headers
+                )
             else:
                 return ApiResponse(
                     success=False, error=f"Unsupported HTTP method: {method}"
@@ -704,7 +717,7 @@ def create_authenticated_client(
     username: str, password: str, base_url: str = "http://localhost:4321/api"
 ) -> TaskManagerClient:
     """
-    Create and authenticate a TaskManager client.
+    Create and authenticate a TaskManager client using session-based login.
 
     Args:
         username: Username for authentication
@@ -724,3 +737,76 @@ def create_authenticated_client(
         raise AuthenticationError(f"Authentication failed: {response.error}")
 
     return client
+
+
+def create_client_credentials_client(
+    client_id: str, client_secret: str, base_url: str = "http://localhost:4321/api"
+) -> TaskManagerClient:
+    """
+    Create and authenticate a TaskManager client using OAuth2 Client Credentials.
+
+    This is the recommended approach for server-to-server (S2S) authentication.
+    The client will automatically obtain an access token using the client credentials
+    grant type and use it for all subsequent API requests.
+
+    Args:
+        client_id: OAuth client ID
+        client_secret: OAuth client secret
+        base_url: Base URL for the TaskManager API
+
+    Returns:
+        Authenticated TaskManagerClient instance with Bearer token auth
+
+    Raises:
+        AuthenticationError: If client credentials authentication fails
+    """
+    import time
+
+    # Create an unauthenticated client first to get the token
+    session = requests.Session()
+
+    # Make token request
+    token_url = f"{base_url.rstrip('/')}/oauth/token"
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }
+
+    try:
+        response = session.post(
+            token_url,
+            data=token_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+        if response.status_code == 401:
+            raise AuthenticationError("Invalid client credentials")
+
+        if response.status_code != 200:
+            try:
+                error_data = response.json()
+                error_msg = error_data.get(
+                    "error_description", error_data.get("error", "Unknown error")
+                )
+            except (ValueError, requests.exceptions.JSONDecodeError):
+                error_msg = f"HTTP {response.status_code}: {response.text}"
+            raise AuthenticationError(f"Client credentials auth failed: {error_msg}")
+
+        token_response = response.json()
+        access_token = token_response.get("access_token")
+
+        if not access_token:
+            raise AuthenticationError("No access token in response")
+
+        # Create client with the access token
+        client = TaskManagerClient(base_url, access_token=access_token)
+
+        # Store token expiration for potential refresh logic
+        expires_in = token_response.get("expires_in", 3600)
+        client.token_expires_at = time.time() + expires_in
+
+        return client
+
+    except requests.exceptions.RequestException as e:
+        raise NetworkError(f"Network error during authentication: {e}")
