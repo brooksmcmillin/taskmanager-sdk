@@ -497,6 +497,7 @@ class TaskManagerClient:
         redirect_uris: list[str],
         grant_types: list[str] | None = None,
         scopes: list[str] | None = None,
+        token_endpoint_auth_method: str | None = None,
     ) -> ApiResponse:
         """
         Create a new OAuth client.
@@ -506,15 +507,20 @@ class TaskManagerClient:
             redirect_uris: list of redirect URIs
             grant_types: list of grant types
             scopes: list of scopes
+            token_endpoint_auth_method: Authentication method for token endpoint.
+                Use "none" for public clients (native apps, SPAs, device flow).
+                Use "client_secret_post" for confidential clients (default).
 
         Returns:
             ApiResponse with created OAuth client data
         """
-        data = {"name": name, "redirectUris": redirect_uris}
+        data: dict[str, str | list[str]] = {"name": name, "redirectUris": redirect_uris}
         if grant_types is not None:
             data["grantTypes"] = grant_types
         if scopes is not None:
             data["scopes"] = scopes
+        if token_endpoint_auth_method is not None:
+            data["token_endpoint_auth_method"] = token_endpoint_auth_method
         return self._make_request("POST", "/oauth/clients", data)
 
     def update_oauth_client(
